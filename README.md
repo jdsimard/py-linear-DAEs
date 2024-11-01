@@ -4,6 +4,8 @@ Tools for representing systems of linear DAEs and ODEs, and for plotting their f
 
 # Basic Usage
 
+To use, import the 'linear_daes' directory in the repository root.
+
 Create system matrices as ndarrays of dimension 2 in numpy, then you can create a system object
 ```
 import numpy as np
@@ -62,3 +64,11 @@ See ./example_usage_2.py for a plot of the following form.
 ![Example Usage 2](./sample_bode_plots/fig_example_usage_2.png "Example Usage 2")
 
 
+# To Do
+
+- more documentation, docstrings
+- flexibility on legend placement
+- magnitude / phase labels for selected frequencies
+- cleanup and commit unit test cases
+- ODE time-domain simulations
+- DAE time-domain simulations
