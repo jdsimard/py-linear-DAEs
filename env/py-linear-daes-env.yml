@@ -1,0 +1,9 @@
+name: py-linear-daes-env
+channels:
+  - defaults
+dependencies:
+  - matplotlib
+  - mypy
+  - numpy
+  - pytest
+  - scipy
