@@ -1,12 +1,17 @@
 # Linear DAEs and Bode plots in Python
 
-Tools for representing systems of linear DAEs and ODEs, and for plotting their frequency responses.
+Tools for representing systems of linear DAEs and ODEs of the form (square or rectangular)
+
+$$E \dot{x} = A x + B u, \quad y = C x + D u,$$
+
+and for generating their Bode plots / frequency responses associated the transfer matrix
+$$H(s) = C (s E - A)^{-1} B + D.$$
 
 # Basic Usage
 
-To use, import the 'linear_daes' directory in the repository root.
+To use, ensure the directory 'linear_daes' ('.\linear_daes' in this repo) is found in your Python search path, make sure that Matplotlib, NumPy, and SciPy are installed (see '.\env\py-linear-daes-env.yml' for a conda environment that can be imported).
 
-Create system matrices as ndarrays of dimension 2 in numpy, then you can create a system object
+Create system matrices as ndarrays of dimension 2 in NumPy, then you can create a LinearDAE object representing the system.
 ```
 import numpy as np
 import linear_daes as ld
@@ -24,7 +29,7 @@ D = np.random.random_sample((p,m))
 
 system = ld.LinearDAE(A, B, C, D, E, label="System 1")
 ```
-The LinearDAE constructor checks that dimensions are consistent, and it will also check if the system is regular (having unique solutions for consistent initial conditions).
+The LinearDAE constructor checks that dimensions are consistent (the system must be square or rectangular), and it will also check if the system is regular (having unique solutions for consistent initial conditions). While the constructor will accept rectangular (non-square, but consistent dimension) systems, such systems can't be regular so you will not be able to use the Bode plot tools; however, you can still use the LinearDAE object as a container for passing rectangular systems to modules, etc.
 
 You can check if the system is an ODE (det(E) != 0), if it is regular, and its dimensions.
 ```
@@ -34,21 +39,21 @@ You can also evaluate the system's transfer function (so long as it is regular),
 ```
 print(system.tf(complex(real=0.0, imag=1.0)))
 ```
-Finally, you can create a BodePlot object and assign the system to it
+Finally, you can create a BodePlot object and assign the system to it.
 ```
 bode_plot = ld.BodePlot()
 bode_plot.add_system(system, color='b', linestyle='solid', linewidth=1.5)
 ```
-Add some data ticks
+Add some data ticks by specifying the frequency, the system to 'pin' the tick to, and the input/output plot to place the tick on (important for MIMO systems).
 ```
 bode_plot.add_data_tick(at_frequency=1, pin_to_system_num=0, pin_to_output_num=1, pin_to_input_num=1, markersize=10, color='r')
 bode_plot.add_data_tick(at_frequency=100, pin_to_system_num=0, pin_to_output_num=1, pin_to_input_num=1, color='g', marker='o', markersize=8)
 ```
 Specify a frequency range, and show the plot!
 ```
-w_start = -2 # power of 10 to start evaluating frequencies
-w_end = 5 # power of 10 to end evaluating frequencies
-w_num_points = 10000 # total number of points to evaluate
+w_start = -2           # power of 10 to start evaluating frequencies
+w_end = 5              # power of 10 to end evaluating frequencies
+w_num_points = 10000   # total number of log-spaced points to evaluate
 
 bode_plot.show(w_start, w_end, w_num_points)
 ```
@@ -62,6 +67,31 @@ See ./example_usage_1.py for a plot of the following form.
 
 See ./example_usage_2.py for a plot of the following form.
 ![Example Usage 2](./sample_bode_plots/fig_example_usage_2.png "Example Usage 2")
+
+
+
+# Additional Convenience Functions in the linear_daes Module
+
+
+Given a complex matrix Z, return its entry-wise magnitude in dB.
+```
+complex_to_dB(Z: numpy.ndarray | complex) -> numpy.ndarray | float
+```
+
+Given a complex matrix Z, return its entry-wise phase in degrees.
+```
+complex_to_deg(Z: numpy.ndarray | complex) -> numpy.ndarray | complex
+```
+
+Given a LinearDAE and a complex frequency, evaluate its (possibly MIMO) transfer matrix at the frequency.
+```
+eval_fr(system: linear_daes.LinearDAE, w: complex) -> tuple[numpy.ndarray,numpy.ndarray] | tuple[float,float]
+```
+
+Given a LinearDAE, real numbers w_start and w_end, and an integer w_num_points, return the LinearDAE's transfer matrix evaluated at w_num_points log-spaced points in the frequency range [complex(real=0.0,imag=1.0) * 10 ** (w_start), complex(real=0.0,imag=1.0) * 10 ** (w_end)].
+```
+eval_fr_range(system: linear_daes.LinearDAE, w_start: float, w_end: float, w_num_points: int) -> tuple[numpy.ndarray,numpy.ndarray]
+```
 
 
 # To Do
