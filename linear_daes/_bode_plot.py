@@ -7,6 +7,8 @@ from ._linear_daes import LinearDAE as _LinearDAE
 
 class BodePlot:
     def __init__(self):
+        """Instantiate a BodePlot object that will be used for generating the Bode plot.
+        """
         self._fig = None
         self._subfigs = None
         self._all_axes = None
@@ -18,7 +20,10 @@ class BodePlot:
         self._p = -1
         self._m = -1
 
+    # An internal class meant for storing the data ticks that the user adds
     class DataTick:
+        """An internal class meant for storing the data ticks that the user adds.
+        """
         def __init__(self, at_frequency: float, pin_to_system_num: int, pin_to_output_num: int, pin_to_input_num: int, color: str, marker: str, markersize: float):
             self.w = at_frequency
             self.sys_num = pin_to_system_num
@@ -48,6 +53,7 @@ class BodePlot:
         Raises:
             ValueError: Can't add the data tick - either frequency is not a positive number, or specified system with specified input and output does not exist.
         """
+        # only add the DataTick if the specified system and outputs/inputs actually exists, and if the specified frequency is positive.
         if not at_frequency > 0 or pin_to_system_num not in range(0,len(self.systems)) or pin_to_output_num not in range(1, self.p+1) or pin_to_input_num not in range(1, self.m+1):
             raise ValueError("Can't add the data tick - either frequency is not a positive number, or specified system with specified input and output does not exist.")
         else:
@@ -56,22 +62,32 @@ class BodePlot:
 
     @property
     def fig(self):
+        """Get the matplotlib figure object, after using the method show(...) with the generate_only=True argument.
+        """
         return self._fig
 
     @property
     def subfigs(self) -> _np.ndarray | None:
+        """Get the matplotlib subfigs object, after using the method show(...) with the generate_only=True argument.
+        """
         return self._subfigs
     
     @property
     def all_axes(self) -> list | None:
+        """Get a list containing the matplotlib axes objects, after using the method show(...) with the generate_only=True argument.
+        """
         return self._all_axes
 
     @property
     def p(self) -> int:
+        """Get the number of outputs associated to systems added to the Bode plot.
+        """
         return self._p
     
     @property
     def m(self) -> int:
+        """Get the number of inputs associated to systems added to the Bode plot.
+        """
         return self._m
 
     def add_system(self, systems: list | _LinearDAE, color: str | None = None, linestyle: str | None = None, linewidth: float | None = 1.5) -> None:
@@ -177,22 +193,28 @@ class BodePlot:
         Raises:
             ValueError: Can't evaluate the frequency response of a DAE that is not regular.
         """
+        # Only prepare the Bode plot if a system has actually been given to the BodePlot object.
         if len(self.systems) > 0:
+            # Set up figure and subfigure objects; each subfigure is associated to an output/input pair, and the figure contains all the subfigures.
             self._fig = _plt.figure()
             self._fig.suptitle("Bode Plot")
             self._subfigs = self.fig.subfigures(self.p,self.m)
 
+            # Create the log-spaced range of frequency to evaluate the Bode plot on.
             w_range = _np.logspace(w_start, w_end, w_num_points, dtype=_np.float64)
 
+            # Get the frequency responses of the systems for plotting, over the provided frequency range.
             responses = [eval_fr_range(sys, w_start, w_end, w_num_points) for sys in self.systems]
             mags = [r[0] for r in responses]
             phases = [r[1] for r in responses]
 
+            # A list that will hold the generated axes, if the user wants to get them later.
             self._all_axes = []
 
             for row in range(0, self.p):
                 axes_row = []
                 for col in range(0,self.m):
+                    # matplotlib subplots are a bit finicky about indexing, so we need to set the axes up based on if the systems are SISO or MIMO.
                     if self.m == 1 and self.p == 1:
                         axs = self._subfigs.subplots(2,1)
                     elif self.m == 1 or self.p == 1:
@@ -201,13 +223,9 @@ class BodePlot:
                         axs = self._subfigs[row,col].subplots(2,1)
 
                     
-
+                    # Setup the magnitude plot for this output/input pair
                     for i, mag_i in enumerate(mags):
                         axs[0].plot(w_range, mag_i[:,row,col], **self.line_styles[i])
-
-                    
-                    
-
                     axs[0].set_ylabel("Magnitude (dB)")
                     axs[0].set_title(f"out: {row+1}, in: {col+1}")
                     axs[0].set_xscale('log')
@@ -218,6 +236,7 @@ class BodePlot:
                     axs[0].tick_params(axis="x", which="minor", grid_linestyle='--', grid_alpha=0.3)
                     axs[0].tick_params(axis="y", which="minor", grid_linestyle='--', grid_alpha=0.3)
 
+                    # Setup the phase plot for this output/input pair
                     for i, phase_i in enumerate(phases):
                         axs[1].plot(w_range, phase_i[:,row,col], **self.line_styles[i])
                     axs[1].set_ylabel("Phase (deg)")
@@ -230,18 +249,22 @@ class BodePlot:
                     axs[1].tick_params(axis="x", which="minor", grid_linestyle='--', grid_alpha=0.3)
                     axs[1].tick_params(axis="y", which="minor", grid_linestyle='--', grid_alpha=0.3)
 
+                    # Add the legend, but only for the (output, input) = (1, 1) plot. It doesn't need to be repeated.
                     if row == 0 and col == 0:
                         axs[0].legend([sys.label for sys in self.systems])
 
-                    # get data ticks for this plot
+                    # Get data ticks for this plot.
                     ticks = [tick for tick in self.data_ticks if tick.p == row+1 and tick.m == col+1]
                     for tick in ticks:
+                        # Plot the associated data ticks.
                         tick_mag, tick_phase = eval_fr(self.systems[tick.sys_num], complex(real=0.0, imag=tick.w))
                         axs[0].plot(tick.w, tick_mag[tick.p - 1, tick.m - 1], marker=tick.marker, color=tick.color, markersize=tick.markersize)
                         axs[1].plot(tick.w, tick_phase[tick.p - 1, tick.m - 1], marker=tick.marker, color=tick.color, markersize=tick.markersize)
 
                     axes_row.append(axs)
+                # Append axes to the all_axes list so that the user can retrieve and modify them if they want.
                 self._all_axes.append(axes_row)
+            # Only show the plot if the user wants to; allows the user to retrieve and modify the figure before matplotlib erases it.
             if not generate_only:
                 _plt.show()
 
