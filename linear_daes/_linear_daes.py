@@ -1,7 +1,8 @@
 ### Created by Joel D. Simard
 
 import numpy as _np
-import scipy.linalg as _spla
+import numpy.typing as _npt
+import scipy.linalg as _spla # type: ignore
 
 class LinearDAE:
     def __init__(self, A: _np.ndarray, B: _np.ndarray, C: _np.ndarray, D: _np.ndarray, E: _np.ndarray = _np.array([[]]), label: str = ""):
@@ -152,11 +153,11 @@ class LinearDAE:
             raise ValueError("Inconsistent shape")
 
     # evaluate the systems transfer function and return the resulting frequency response
-    def tf(self, s: complex) -> _np.ndarray | None:
+    def tf(self, s: complex) -> _npt.NDArray[_np.complex_]:
         if self.isRegular:
             return self.C @ _np.linalg.inv(self.E * s - self.A) @ self.B + self.D
         else:
-            return None
+            raise ValueError("System is not regular.")
     
     # give the caller a binding to this systems transfer function method (for external use)
     def get_tf(self):

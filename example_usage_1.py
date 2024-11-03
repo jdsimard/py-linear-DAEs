@@ -83,6 +83,11 @@ bode_plot.add_data_tick(at_frequency=100, pin_to_system_num=0, pin_to_output_num
 # now show the Bode plot for the specified frequency range
 bode_plot.show(w_start, w_end, w_num_points)
 
+# Note that matplotlib.pyplot.show() erases the plot, so if you want to alter / save / etc the plot before showing, indicate in the show method that the plot should be generated but not shown, then retrieve the plot, do whatever you want, and call the show_after_no_generate method.
+bode_plot.show(w_start, w_end, w_num_points, generate_only=True)
+bode_plot.fig.savefig("fig_test.png")
+bode_plot.show_after_generate_only()
+
 
 
 # There are also some other functions included which are used for the Bode plot, but can also be used for other things

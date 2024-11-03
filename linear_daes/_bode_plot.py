@@ -1,6 +1,7 @@
 ### Created by Joel D. Simard
 
 import numpy as _np
+import numpy.typing as _npt
 import matplotlib.pyplot as _plt
 from ._linear_daes import LinearDAE as _LinearDAE
 
@@ -18,7 +19,7 @@ class BodePlot:
         self._m = -1
 
     class DataTick:
-        def __init__(self, at_frequency, pin_to_system_num, pin_to_output_num, pin_to_input_num, color, marker, markersize):
+        def __init__(self, at_frequency: float, pin_to_system_num: int, pin_to_output_num: int, pin_to_input_num: int, color: str, marker: str, markersize: float):
             self.w = at_frequency
             self.sys_num = pin_to_system_num
             self.p = pin_to_output_num
@@ -27,10 +28,28 @@ class BodePlot:
             self.marker = marker
             self.markersize = markersize
 
-    def add_data_tick(self, at_frequency, pin_to_system_num = 0, pin_to_output_num = 1, pin_to_input_num = 1, color = 'k', marker='x', markersize=6):
+    def add_data_tick(self, at_frequency: float, pin_to_system_num: int = 0, pin_to_output_num: int = 1, pin_to_input_num: int = 1, color: str = 'k', marker: str = 'x', markersize: float = 6) -> None:
+        """Add a data marker to the Bode plot.
+
+        Add a marker pinned to a specified system's specified input and output plot at a particular frequency.
+
+        Args:
+            at_frequency: add the marker to the frequency complex(real=0.0,imag=1.0) * at_frequency; must be positive on a log plot.
+            pin_to_system_num: attach the marker to the plot of the system with this 0-based index; index is determined by the order of systems provided with calls to add_system(...).
+            pin_to_output_num: attach the marker to the plot with this output number; 1-based to correspond to subplot titles.
+            pin_to_input_num: attach the marker to the plot with this input number; 1-based to correspond to subplot titles.
+            color: optional color setting, matplotlib usage.
+            marker: optional marker setting, matplotlib usage.
+            markersize: optional markersize setting, matplotlib usage.
+
+        Returns:
+            None
+
+        Raises:
+            ValueError: Can't add the data tick - either frequency is not a positive number, or specified system with specified input and output does not exist.
+        """
         if not at_frequency > 0 or pin_to_system_num not in range(0,len(self.systems)) or pin_to_output_num not in range(1, self.p+1) or pin_to_input_num not in range(1, self.m+1):
-            # data tick can't be added
-            return
+            raise ValueError("Can't add the data tick - either frequency is not a positive number, or specified system with specified input and output does not exist.")
         else:
             new_tick = self.DataTick(at_frequency, pin_to_system_num, pin_to_output_num, pin_to_input_num, color, marker, markersize)
             self.data_ticks.append(new_tick)
@@ -40,23 +59,38 @@ class BodePlot:
         return self._fig
 
     @property
-    def subfigs(self):
+    def subfigs(self) -> _np.ndarray | None:
         return self._subfigs
     
     @property
-    def all_axes(self):
+    def all_axes(self) -> list | None:
         return self._all_axes
 
     @property
-    def p(self):
+    def p(self) -> int:
         return self._p
     
     @property
-    def m(self):
+    def m(self) -> int:
         return self._m
 
-    def add_system(self, systems: list | _LinearDAE, color = None, linestyle = None, linewidth = 1.5):
-    #def add_system(self, systems: list | _LinearDAE):
+    def add_system(self, systems: list | _LinearDAE, color: str | None = None, linestyle: str | None = None, linewidth: float | None = 1.5) -> None:
+        """Add a LinearDAE, or a list of LinearDAEs, to be added to the Bode plot.
+
+        Given a LinearDAE, or list of LinearDAEs, to be plotted together they must all have the same number of inputs and outputs. The number of inputs and outputs that the BodePlot object will accept without raising an exception is determined by the first system it is given via this method, or the first system in the list. Any subsequent calls to the method will raise an exception if they have a different number of inputs and outputs from this first system or if the an initially provided list does not have constant input and output numbers. Optional style parameters can be given, which are applied to all of the systems provided in any particular call of this method.
+
+        Args:
+            systems: an instance of LinearDAE, or list of LinearDAEs, all having the same number of inputs and outputs and with system.isRegular == True.
+            color: optional color setting, matplotlib usage.
+            linestyle: optional linestyle setting, matplotlib usage.
+            linewidth: optional linewidth setting, matplotlib usage.
+    
+        Returns:
+            None
+
+        Raises:
+            ValueError: To produce a combined figure, BodePlot class can only contain systems that have the same number of inputs and outputs.
+        """
         if isinstance(systems, list):
             for i in range(0, len(systems)):
                 if isinstance(systems[i], _LinearDAE):
@@ -70,7 +104,7 @@ class BodePlot:
                         if not linestyle == None:
                             style_dict['linestyle'] = linestyle
                         if not linewidth == None:
-                            style_dict['linewidth'] = linewidth
+                            style_dict['linewidth'] = str(linewidth)
                         self.line_styles.append(style_dict)
                     else:
                         if not systems[i].p == self.p or not systems[i].m == self.m:
@@ -83,7 +117,7 @@ class BodePlot:
                             if not linestyle == None:
                                 style_dict['linestyle'] = linestyle
                             if not linewidth == None:
-                                style_dict['linewidth'] = linewidth
+                                style_dict['linewidth'] = str(linewidth)
                             self.line_styles.append(style_dict)
         elif isinstance(systems, _LinearDAE):
             if len(self.systems) == 0:
@@ -96,7 +130,7 @@ class BodePlot:
                 if not linestyle == None:
                     style_dict['linestyle'] = linestyle
                 if not linewidth == None:
-                    style_dict['linewidth'] = linewidth
+                    style_dict['linewidth'] = str(linewidth)
                 self.line_styles.append(style_dict)
             else:
                 if not systems.p == self.p or not systems.m == self.m:
@@ -109,10 +143,40 @@ class BodePlot:
                     if not linestyle == None:
                         style_dict['linestyle'] = linestyle
                     if not linewidth == None:
-                        style_dict['linewidth'] = linewidth
+                        style_dict['linewidth'] = str(linewidth)
                     self.line_styles.append(style_dict)
 
-    def show(self, w_start, w_end, w_num_points):
+    def show_after_generate_only(self) -> None:
+        """Show the Bode plot after generating using the self.show(...) method with the generate_only option set to True.
+
+        This allows the user to retrieve the figure in self.fig/self.subfigs/self.all_axes to make edits / save to file / etc., after which this method can be called to show the plot.
+
+        Args:
+            None
+    
+        Returns:
+            None
+        """
+        if not self.fig == None:
+            _plt.show()
+
+    def show(self, w_start: float, w_end: float, w_num_points: int, generate_only: bool = False) -> None:
+        """Create a Bode plot for the specified frequency range, associated to the added LinearDAE objects and data ticks.
+
+        Create a Bode plot for the specified frequency range, [complex(real=0.0,imag=1.0) * 10 ** w_start, complex(real=0.0,imag=1.0) * 10 ** w_end] with w_num_points log-spaced points, associated to the added LinearDAE objects and each added BodePlot.DataTick.
+
+        Args:
+            w_start: a power of 10 indicating the start of the frequency range; sets the start of the evaluation range to complex(real=0.0,imag=1.0) * 10 ** w_start.
+            w_end: a power of 10 indicating the end of the frequency range; sets the end of the evaluation range to complex(real=0.0,imag=1.0) * 10 ** w_end.
+            w_num_points: sets the frequency range to have w_num_points log-spaced points in the range [complex(real=0.0,imag=1.0) * 10 ** w_start, complex(real=0.0,imag=1.0) * 10 ** w_end], inclusive.
+            generate_only: an optional parameter specifying whether the plot should be displayed after generating; setting this to True allows the user to retrieve the figure in self.fig/self.subfigs/self.all_axes to make edits / save to file / etc., after which the show_after_generate_only() method can be called to show the plot.
+    
+        Returns:
+            None
+
+        Raises:
+            ValueError: Can't evaluate the frequency response of a DAE that is not regular.
+        """
         if len(self.systems) > 0:
             self._fig = _plt.figure()
             self._fig.suptitle("Bode Plot")
@@ -178,35 +242,80 @@ class BodePlot:
 
                     axes_row.append(axs)
                 self._all_axes.append(axes_row)
-            _plt.show()
+            if not generate_only:
+                _plt.show()
 
 
 
+def complex_to_dB(Z: _npt.NDArray[_np.complex_] | complex) -> _np.ndarray:
+    """Get the entry-wise magnitude (in dB) of a complex numpy.ndarray.
 
+    Given Z, return a numpy.ndarray with entries being the magnitude (in dB) of the associated entries in Z.
 
-
-
-
-
-
-
-
-
-def complex_to_dB(Z: _np.ndarray | complex) -> _np.ndarray | float:
+    Args:
+        Z: a complex-valued numpy.ndarray, or a complex number.
+    
+    Returns:
+        A numpy.ndarray with entries being the magnitude (in dB) of the associated entries in Z.
+    """
     return 20 * _np.log10(_np.absolute(Z))
-    #return 20 * math.log10(abs(z))
 
-def complex_to_deg(Z: _np.ndarray | complex) -> _np.ndarray | complex:
+
+
+def complex_to_deg(Z: _npt.NDArray[_np.complex_] | complex) -> _np.ndarray:
+    """Get the entry-wise phase (in degrees) of a complex numpy.ndarray.
+
+    Given Z, return a numpy.ndarray with entries being the phase (in degrees) of the associated entries in Z.
+
+    Args:
+        Z: a complex-valued numpy.ndarray, or a complex number.
+    
+    Returns:
+        A numpy.ndarray with entries being the phase (in degrees) of the associated entries in Z.
+    """
     return _np.degrees(_np.angle(Z))
-    #return math.degrees(cmath.phase(z))
 
-def eval_fr(system: _LinearDAE, w: complex) -> tuple[_np.ndarray,_np.ndarray] | tuple[float,float]:
+
+
+def eval_fr(system: _LinearDAE, w: complex) -> tuple[_npt.NDArray[_np.complex_], _npt.NDArray[_np.complex_]]:
+    """Given a LinearDAE, evaluate its transfer matrix at a particular complex frequency.
+
+    Given a LinearDAE, evaluate its transfer matrix at the complex frequency w, returning a tuple of two numpy.ndarrays associated to the magnitude and phase, respectively.
+
+    Args:
+        system: an instance of LinearDAE, with system.isRegular == True.
+        w: a scalar complex number to evaluate the system's transfer matrix at.
+    
+    Returns:
+        A tuple of two numpy.ndarrays associated to the magnitude and phase, respectively, of the system's transfer matrix evaluated at w. The dimensions of each numpy.ndarray in the tuple are associated to the output and input number of the transfer matrix.
+
+    Raises:
+        ValueError: Can't evaluate the frequency response of a DAE that is not regular.
+    """
     if not system.isRegular:
         raise ValueError("Can't evaluate the frequency response of a DAE that is not regular.")
     tf_eval = system.tf(w)
     return complex_to_dB(tf_eval), complex_to_deg(tf_eval)
 
-def eval_fr_range(system: _LinearDAE, w_start: float, w_end: float, w_num_points: int) -> tuple[_np.ndarray,_np.ndarray]:
+
+
+def eval_fr_range(system: _LinearDAE, w_start: float, w_end: float, w_num_points: int) -> tuple[_npt.NDArray[_np.complex_],_npt.NDArray[_np.complex_]]:
+    """Given a LinearDAE, evaluate its transfer matrix for a range of frequencies.
+
+    Given a LinearDAE, evaluate its transfer matrix at w_num_points log-spaced points in the imaginary frequency axis [complex(real=0.0,imag=1.0) * 10 ** w_start, complex(real=0.0,imag=1.0) * 10 ** w_end], returning a tuple of two numpy.ndarrays associated to the magnitude and phase, respectively.
+
+    Args:
+        system: an instance of LinearDAE, with system.isRegular == True.
+        w_start: a power of 10 indicating the start of the frequency range; sets the start of the evaluation range to complex(real=0.0,imag=1.0) * 10 ** w_start.
+        w_end: a power of 10 indicating the end of the frequency range; sets the end of the evaluation range to complex(real=0.0,imag=1.0) * 10 ** w_end.
+        w_num_points: sets the frequency range to have w_num_points log-spaced points in the range [complex(real=0.0,imag=1.0) * 10 ** w_start, complex(real=0.0,imag=1.0) * 10 ** w_end], inclusive.
+    
+    Returns:
+        A tuple of two numpy.ndarrays associated to the magnitude and phase, respectively, of the system's transfer matrix evaluated along the specified frequency range. The first dimension of each numpy.ndarray in the tuple is associated to the evaluated frequency range, and the remaining dimensions are associated to the output and input number of the transfer matrix.
+
+    Raises:
+        ValueError: Can't evaluate the frequency response of a DAE that is not regular.
+    """
     if not system.isRegular:
         raise ValueError("Can't evaluate the frequency response of a DAE that is not regular.")
     magnitude_range = []
@@ -217,3 +326,5 @@ def eval_fr_range(system: _LinearDAE, w_start: float, w_end: float, w_num_points
         magnitude_range.append(eval_mag)
         phase_range.append(eval_phase)
     return _np.array(magnitude_range), _np.array(phase_range)
+
+

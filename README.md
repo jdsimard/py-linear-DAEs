@@ -4,7 +4,7 @@ Tools for representing systems of linear DAEs and ODEs of the form (square or re
 
 $$E \dot{x} = A x + B u, \quad y = C x + D u,$$
 
-and for generating their Bode plots / frequency responses associated the transfer matrix
+and for generating their Bode plots / frequency responses associated to the transfer matrix
 $$H(s) = C (s E - A)^{-1} B + D.$$
 
 # Basic Usage
@@ -58,6 +58,13 @@ w_num_points = 10000   # total number of log-spaced points to evaluate
 bode_plot.show(w_start, w_end, w_num_points)
 ```
 
+Note that matplotlib.pyplot.show() erases the plot, so if you want to alter / save / etc the plot before showing, indicate in the show method that the plot should be generated but not shown, then retrieve the plot, do whatever you want, and call the show_after_no_generate method.
+```
+bode_plot.show(w_start, w_end, w_num_points, generate_only=True)
+bode_plot.fig.savefig("fig_test.png")
+bode_plot.show_after_generate_only()
+```
+
 # Samples
 
 
@@ -75,22 +82,22 @@ See ./example_usage_2.py for a plot of the following form.
 
 Given a complex matrix Z, return its entry-wise magnitude in dB.
 ```
-complex_to_dB(Z: numpy.ndarray | complex) -> numpy.ndarray | float
+complex_to_dB(Z: npt.NDArray[np.complex_] | complex) -> np.ndarray
 ```
 
 Given a complex matrix Z, return its entry-wise phase in degrees.
 ```
-complex_to_deg(Z: numpy.ndarray | complex) -> numpy.ndarray | complex
+complex_to_deg(Z: npt.NDArray[np.complex_] | complex) -> np.ndarray
 ```
 
 Given a LinearDAE and a complex frequency, evaluate its (possibly MIMO) transfer matrix at the frequency.
 ```
-eval_fr(system: linear_daes.LinearDAE, w: complex) -> tuple[numpy.ndarray,numpy.ndarray] | tuple[float,float]
+eval_fr(system: LinearDAE, w: complex) -> tuple[npt.NDArray[np.complex_], npt.NDArray[np.complex_]]
 ```
 
 Given a LinearDAE, real numbers w_start and w_end, and an integer w_num_points, return the LinearDAE's transfer matrix evaluated at w_num_points log-spaced points in the frequency range [complex(real=0.0,imag=1.0) * 10 ** (w_start), complex(real=0.0,imag=1.0) * 10 ** (w_end)].
 ```
-eval_fr_range(system: linear_daes.LinearDAE, w_start: float, w_end: float, w_num_points: int) -> tuple[numpy.ndarray,numpy.ndarray]
+eval_fr_range(system: LinearDAE, w_start: float, w_end: float, w_num_points: int) -> tuple[npt.NDArray[np.complex_],npt.NDArray[np.complex_]]
 ```
 
 

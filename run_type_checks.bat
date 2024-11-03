@@ -1,0 +1,1 @@
+mypy linear_daes
